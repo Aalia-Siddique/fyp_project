@@ -166,7 +166,7 @@
 
 
 
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import {
     View,
     Text,
@@ -179,56 +179,42 @@ import {
     ScrollView,
   } from "react-native";
 import { Picker } from '@react-native-picker/picker';
+import { Alert } from 'react-native';
+
 
 
 
 const PostJob = () => {
+  const [selectedOption, setSelectedOption] = useState('');
+const [JobTitle, setJobTitle] = useState('');
+const [JobTimings, setJobTimings] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('');
   const [experienceType, setExperienceType] = useState('');
   const [minExperience, setMinExperience] = useState('');
   const [maxExperience, setMaxExperience] = useState('');
-  const [minSalary, setMinSalary] = useState('');
+  const [Salary, setSalary] = useState('');
   const [maxSalary, setMaxSalary] = useState('');
-  const [bonus, setBonus] = useState(false); // Default "No"
   const [jobDescription, setJobDescription] = useState('');
   const [skills, setSkills] = useState('');
   const [sections, setSections] = useState([]);
   const [expanded, setExpanded] = useState(false);
-  const [degreeModalVisible, setDegreeModalVisible] = useState(false);
-  const [selectedDegree, setSelectedDegree] = useState("");
-  const [selectedAssets, setSelectedAssets] = useState([]);
-  const [minAge, setMinAge] = useState("");
-  const [maxAge, setMaxAge] = useState("");
-  const [selectedLanguages, setSelectedLanguages] = useState([]);
-
-  const sectionTypes = [
-    "Age",
-    "Preferred Language",
-    "Assets",
-    "Degree and Specialisation",
-    
-  ];
-
-  const degrees = ["Engineering", "Medical", "Arts", "Science", "Law", "Business"];
-  const specializations = ["Computer Science", "Marketing", "Finance", "Civil", "Design"];
-  const assets = ["Bike", "License", "Camera", "Laptop", "Smartphone"];
-  const languages = ["English", "Hindi", "Urdu", "French", "Spanish", "German"];
+ const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneError, setPhoneError] = useState('');
-  const [maxBonus, setMaxBonus] = useState('');
-const [bonusType, setBonusType] = useState('');
-
+  const [Companyname, setCompanyname] = useState('');
+ const [CompanyAddress, setCompanyAddress] = useState('');
 const [selectedJobType, setSelectedJobType] = useState('');
 const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
-  const validatePhoneNumber = (text) => {
-    const phoneRegex = /^[6-9]\d{9}$/;
-    if (!phoneRegex.test(text)) {
-      setPhoneError('Invalid Phone Number');
-    } else {
-      setPhoneError('');
-    }
-    setPhoneNumber(text);
-  };
+
+// const validatePhoneNumber = (text) => {
+//   const phoneRegex = /^\+92[3-9]\d{8}$/; // +92 followed by 3-9 and 8 digits
+//   if (!phoneRegex.test(text)) {
+//     setPhoneError('Invalid Phone Number');
+//   } else {
+//     setPhoneError('');
+//   }
+//   setPhoneNumber(text);
+// };
 
   const toggleDropdown = () => setExpanded(!expanded);
 
@@ -241,23 +227,105 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
     setSections((prev) => prev.filter((item) => item !== section));
   };
 
-  const toggleAsset = (asset) => {
-    setSelectedAssets((prev) =>
-      prev.includes(asset) ? prev.filter((a) => a !== asset) : [...prev, asset]
-    );
-  };
+  const handleSubmit = async () => {
+    console.log('Submit button clicked');
 
-  const toggleLanguage = (language) => {
-    setSelectedLanguages((prev) =>
-      prev.includes(language) ? prev.filter((l) => l !== language) : [...prev, language]
-    );
-  };
+    const skillsArray = skills ? skills.split(',').map(skill => skill.trim()) : [];
+    if (!JobTitle || !selectedLocation || !selectedJobType|| !selectedWorkplaceType|| !Salary || !jobDescription || !skills || !phoneNumber ||!Companyname || !email || !JobTimings) {
+      Alert.alert('Error', 'Please fill all required fields correctly.');
+      return;
+    }
+    let experienceValue = '';
+    if (experienceType === 'Experienced') {
+        if (!minExperience || !maxExperience) {
+            Alert.alert('Error', 'Please provide both minimum and maximum experience for Experienced.');
+            return;
+        }
+        experienceValue = `${minExperience} to ${maxExperience} years experience `;
+    } else if (experienceType === 'Fresher') {
+        experienceValue = 'Fresher only';
+    } else {
+        experienceValue = 'Any';
+    }
 
-  const handleDegreeSelection = (degree) => {
-    setSelectedDegree(degree);
-    setDegreeModalVisible(false);
+    const phoneRegex = /^\+92[3][0-9]{9}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+        Alert.alert("Validation Error", "Please enter a valid Pakistani phone number starting with +92 followed by 10 digits (e.g., +923001234567).");
+        return;
+    }
+    
+    
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            Alert.alert("Validation Error", "Please enter a valid email address.");
+            return;
+        }
+    const jobData = {
+      Name: JobTitle || '',
+      Timing: JobTimings || '',
+      Location: selectedLocation || '',
+      Experience: experienceValue,
+      MinSalary: parseFloat(Salary) || 0,
+      MaxSalary: parseFloat(maxSalary) || 0,
+      Description:jobDescription || '',
+      Skills: skillsArray || '',
+      Email: email || '',
+      PhoneNumber: phoneNumber || '',
+      CompanyName: Companyname || '',
+      Address: CompanyAddress || '',
+      JobType: selectedJobType || '',
+      WorkplaceType: selectedWorkplaceType || '',
+    };
+    
+    try {
+      // Check if data is serializable
+      console.log('Serialized Data:', JSON.stringify(jobData));
+  
+      const response = await fetch('http://192.168.100.22:5229/api/JobPost', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(jobData),
+      });
+  
+      if (response.ok) {
+        Alert.alert('Success', 'Job posted successfully!');
+        // Clear form
+        setJobTitle('');
+        setJobTimings('');
+        setSelectedLocation('');
+        setExperienceType('');
+        setSalary('');
+        setJobDescription('');
+        setSkills('');
+        setEmail('');
+        setPhoneNumber('');
+        setCompanyname('');
+        setCompanyAddress('');
+        setSelectedJobType('');
+        setSelectedWorkplaceType('');
+      } else {
+        const errorResponse = await response.json();
+        console.error('Error details:', errorResponse);
+        Alert.alert('Error', 'Failed to post the job. Try again.');
+      }
+    } catch (error) {
+      console.error('Submit Error:', error);
+  
+      // Enhanced debugging to find the problematic property
+      console.log('Testing each property for serialization...');
+      Object.entries(jobData).forEach(([key, value]) => {
+        try {
+          JSON.stringify({ [key]: value });
+          console.log(`Property "${key}" serialized successfully.`);
+        } catch (serializationError) {
+          console.error(`Serialization failed for property "${key}":`, serializationError);
+        }
+      });
   };
-
+};
   return (
     <ScrollView style={style.container}>
       {/* Header */}
@@ -282,7 +350,10 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
         <Text style={[style.sectionTitle,{margin:10}]}>Basic Job Details</Text>
         <View style={style.inputHeader}>
           <Text style={style.label}>Job Title*</Text>
-          <TextInput placeholder="Enter your job title" style={style.textInput} />
+          <TextInput placeholder="Enter your job title" 
+          value={JobTitle}
+          onChangeText={setJobTitle}
+          style={style.textInput} />
 
           <Text style={style.label}>Job Location*</Text>
           <View style={style.pickerContainer}>
@@ -291,7 +362,7 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
               onValueChange={(itemValue) => setSelectedLocation(itemValue)}
               style={style.pickerStyle}
             >
-              <Picker.Item label="Select a location" value="" />
+              <Picker.Item style={{fontSize:15,color:'#a9a9a9' }} label="Select a location" value="" />
               <Picker.Item label="New Delhi" value="new_delhi" />
               <Picker.Item label="Mumbai" value="mumbai" />
               <Picker.Item label="Bangalore" value="bangalore" />
@@ -306,7 +377,7 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
         onValueChange={(itemValue) => setSelectedJobType(itemValue)}
         style={style.pickerStyle}
       >
-        <Picker.Item label="Select job type" value="" />
+        <Picker.Item style={{fontSize:15,color:'#a9a9a9',height:30 }} label="Select job type" value="" />
         <Picker.Item label="Part-time" value="part_time" />
         <Picker.Item label="Full-time" value="full_time" />
         <Picker.Item label="Internship" value="internship" />
@@ -320,7 +391,7 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
         onValueChange={(itemValue) => setSelectedWorkplaceType(itemValue)}
         style={style.pickerStyle}
       >
-        <Picker.Item label="Select workplace type" value="" />
+        <Picker.Item label="Select workplace type" style={{fontSize:15,color:'#a9a9a9' }} value="" />
         <Picker.Item label="Hybrid" value="hybrid" />
         <Picker.Item label="Remote" value="remote" />
         <Picker.Item label="On-site" value="on_site" />
@@ -385,10 +456,10 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
           <Text style={style.sectionTitle}>Monthly in-hand salary</Text>
 
           <View style={style.salaryInputContainer}>
-            <TextInput
+          <TextInput
               placeholder="Eg. 10000"
-              value={minSalary}
-              onChangeText={setMinSalary}
+              value={Salary}
+              onChangeText={setSalary}
               keyboardType="numeric"
               style={style.salaryInput}
             />
@@ -402,51 +473,7 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
             />
           </View>
 
-          {/* <Text style={style.label}>Do you offer bonus in addition to monthly salary?</Text>
-    <View style={style.radioButtonContainer}>
-      <TouchableOpacity
-        style={[style.radioButton, bonus && style.activeRadioButton]}
-        onPress={() => setBonus(true)}
-      >
-        <View style={style.radioCircle}>
-          {bonus && <View style={style.selectedCircle} />}
-        </View>
-        <Text style={style.radioText}>Yes</Text>
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={[style.radioButton, !bonus && style.activeRadioButton]}
-        onPress={() => setBonus(false)}
-      >
-        <View style={style.radioCircle}>
-          {!bonus && <View style={style.selectedCircle} />}
-        </View>
-        <Text style={style.radioText}>No</Text>
-      </TouchableOpacity>
-    </View> */}
-
-    {/* Show Bonus Amount and Type if "Yes" is selected */}
-    {/* {bonus && (
-      <View>
-        <Text style={style.label}>Maximum Bonus Amount*</Text>
-        <TextInput
-          placeholder="Eg. 5000"
-          value={maxBonus}
-          onChangeText={setMaxBonus}
-          keyboardType="numeric"
-          style={style.salaryInput}
-        />
-
-        <Text style={style.label}>Bonus Type*</Text>
-        <TextInput
-          placeholder="Eg. Performance-based, Fixed"
-          value={bonusType}
-          onChangeText={setBonusType}
-          style={style.textInput}
-        />
-      </View>
-    )} */}
-
-
+          
         {/* Job Info */}
         <Text style={style.sectionTitle}>Job Info / Job Description*</Text>
         <TextInput
@@ -466,72 +493,25 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
         />
       </View>
     </View>
-    {/* <View style={style.container2}> */}
-      {/* Dropdown Header */}
-      {/* <TouchableOpacity style={style.dropdownHeader} onPress={toggleDropdown}>
-        <Text style={{color:'green',fontWeight:'bold'}}>
-          Personal details, Education, Additional Info
-        </Text>
-        <Text style={style.expandText}>{expanded ? "▲" : "▼"}</Text>
-      </TouchableOpacity> */}
-
-      {/* Dropdown Content */}
-      {/* {expanded && (
-        <View style={style.dropdownContent}>
-          {sectionTypes.map((item, index) => (
-            <TouchableOpacity
-              key={index}
-              style={style.dropdownItem}
-              onPress={() => addSection(item)}
-            >
-              <Text style={style.dropdownItemText}>{item} +</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      )} */}
-
-      {/* Render Sections Dynamically */}
-      {/* <FlatList
-        data={sections}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item }) => {
-          if (item === "Degree and Specialisation") {
-            return (
-              <View style={style.sectionContainer}>
-                <View style={style.sectionHeader}>
-                  <Text style={style.sectionTitle}>Degree and Specialisation</Text>
-                  <TouchableOpacity onPress={() => removeSection(item)}>
-                    <Text style={style.closeButton}>❌</Text>
-                  </TouchableOpacity>
-                </View>
-                <TouchableOpacity
-                  style={style.dropdownButton}
-                  onPress={() => setDegreeModalVisible(true)}
-                >
-                  <Text>
-                    {selectedDegree || "Select Degree and Specialisation"}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            );
-          } */}
+  
 
         
     <Text style={{margin:10,fontWeight:'bold'}}>
         Timings*
     </Text>
-    <View style={[style.topHeader, { backgroundColor: 'white' }]}>
+    <View style={[style.topHeader, { backgroundColor: 'white',marginTop:10 }]}>
   {/* Your content here */}
 
     <Text style={style.sectionTitle}>Job Timings*</Text>
 <TextInput
   placeholder="Enter job timings (e.g., 9 AM - 6 PM)"
-  value={jobDescription} // You can reuse this state or create a new one like jobTimings
-  onChangeText={setJobDescription}
+  value={JobTimings} // You can reuse this state or create a new one like jobTimings
+  onChangeText={setJobTimings}
   style={style.textInput}
 />
-       
+
     </View>
+    
     <Text style={style.heading}>
         About Your Company
     </Text>
@@ -543,85 +523,48 @@ const [selectedWorkplaceType, setSelectedWorkplaceType] = useState('');
         <TextInput
           style={style.input}
           placeholder="Eg. Eloquent info Solutions"
+          value ={Companyname}
+          onChangeText={setCompanyname}
         />
       </View>
       <View style={style.inputGroup}>
         <Text style={style.label}>Company address</Text>
         <TextInput
           style={style.input}
-          
+          placeholder='enter company address'
+          value={CompanyAddress}
+          onChangeText={setCompanyAddress}
         />
       </View>
-
-      {/* <View style={style.inputGroup}>
-        <Text style={style.label}>Contact Person Name *</Text>
-        <TextInput
-          style={style.input}
-          placeholder="Eg. Nilesh"
-        />
-      </View> */}
 
       <View style={style.inputGroup}>
         <Text style={style.label}>Phone Number *</Text>
         <TextInput
           style={[style.input, phoneError ? style.errorBorder : null]}
-          placeholder="+91"
+          placeholder="+92"
           keyboardType="number-pad"
           value={phoneNumber}
-          onChangeText={validatePhoneNumber}
+          onChangeText={setPhoneNumber}
         />
-        {phoneError ? <Text style={style.errorText}>{phoneError}</Text> : null}
+       
       </View>
 
       <View style={style.inputGroup}>
         <Text style={style.label}>Email Id *</Text>
         <TextInput
           style={style.input}
+
           placeholder="Eg. eloquent@gmail.com"
-          keyboardType="email-address"
+           keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+         
         />
       </View>
 
-      {/* <View style={style.inputGroup}>
-        <Text style={style.label}>Contact Person Profile *</Text>
-        <Picker style={[style.picker,{borderWidth:1,borderColor:'black'}]}>
-          <Picker.Item label="HR/Owner" value="hr" />
-          <Picker.Item label="Manager" value="manager" />
-        </Picker>
-      </View> */}
-
-      {/* <View style={style.inputGroup}>
-        <Text style={style.label}>Size of Organization *</Text>
-        <Picker style={style.picker}>
-          <Picker.Item label="Select number of employees" value="" />
-          <Picker.Item label="1-10" value="1-10" />
-          <Picker.Item label="11-50" value="11-50" />
-          <Picker.Item label="51-200" value="51-200" />
-        </Picker>
-      </View> */}
-
-      {/* <View style={style.inputGroup}>
-        <Text style={style.label}>Job Address *</Text>
-        <TextInput
-          style={[style.input, { height: 80 }]}
-          placeholder="Address ONLY shown to registered candidates"
-          multiline
-        />
-      </View> */}
-
-      {/* <View style={style.inputGroup}>
-        <Text style={style.label}>How often do you have a new job vacancy?</Text>
-        <Picker style={style.picker}>
-          <Picker.Item label="Choose hiring frequency" value="" />
-          <Picker.Item label="Weekly" value="weekly" />
-          <Picker.Item label="Monthly" value="monthly" />
-          <Picker.Item label="Rarely" value="rarely" />
-        </Picker>
-      </View> */}
-
-      
     </ScrollView>
-    <TouchableOpacity style={style.button1} onPress={() => alert('Form Submitted!')}>
+    
+    <TouchableOpacity style={style.button1} onPress={handleSubmit}>
       <Text style={style.buttonText1}>Submit</Text>
     </TouchableOpacity>
     </ScrollView>
@@ -683,6 +626,11 @@ const style = StyleSheet.create({
     margin: 10,
     fontSize: 15,
   },
+  label: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
   inputHeader: {
     width: '90%',
     padding: 10,
@@ -691,9 +639,9 @@ const style = StyleSheet.create({
     borderRadius: 10,
     elevation: 8,
   },
-  label: {
-    margin: 6,
-  },
+  // label: {
+  //   margin: 6,
+  // },
   textInput: {
     borderWidth: 1,
     borderColor: 'black',
@@ -706,9 +654,12 @@ const style = StyleSheet.create({
     borderColor: 'black',
     borderRadius: 10,
     backgroundColor: 'white',
+    padding:0
+   
   },
   pickerStyle: {
-    height: 50,
+    height: 52,
+    fontSize:10
   },
   experienceButtonsContainer: {
     flexDirection: 'row',
@@ -744,12 +695,13 @@ const style = StyleSheet.create({
   salaryInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    // width:600
   },
   salaryInput: {
     borderWidth: 1,
     borderColor: 'black',
     borderRadius: 5,
-    width: '40%',
+    width: 100,
     padding: 8,
     marginLeft:8
   },
@@ -862,25 +814,5 @@ const style = StyleSheet.create({
     backgroundColor: '#f9f9f9',
   },
 });
-// const styles=StyleSheet.craeate({
-//     container: { flex: 1, padding: 10, backgroundColor: "#D9F6DD" },
-//   dropdownHeader: { flexDirection: "row", justifyContent: "space-between", padding: 10, backgroundColor: "#10A881", borderRadius: 5 },
-//   headingText: { color: "white", fontSize: 16 },
-//   expandText: { color: "white", fontSize: 16 },
-//   dropdownContent: { backgroundColor: "white", padding: 10, borderRadius: 5 },
-//   dropdownItem: { padding: 10 },
-//   dropdownItemText: { fontSize: 14 },
-//   sectionContainer: { backgroundColor: "white", padding: 10, marginVertical: 5, borderRadius: 5 },
-//   sectionTitle: { fontSize: 14, fontWeight: "bold", marginBottom: 5 },
-//   textInput: { borderWidth: 1, borderRadius: 5, padding: 8, marginVertical: 5 },
-//   ageContainer: { flexDirection: "row", justifyContent: "space-between" },
-//   assetOption: { padding: 10, marginVertical: 5, borderWidth: 1, borderRadius: 5 },
-//   assetSelected: { backgroundColor: "#10A881", color: "white" },
-//   dropdownButton: { padding: 10, borderWidth: 1, borderRadius: 5, backgroundColor: "#f0f0f0" },
-//   modalContainer: { flex: 1, padding: 20, backgroundColor: "white" },
-//   modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 10 },
-//   modalItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#ddd" },
-//   closeButton: { marginTop: 20, padding: 10, backgroundColor: "#10A881", borderRadius: 5, alignItems: "center" },
-//   closeButtonText: { color: "white", fontWeight: "bold" },
-// })
+
 export default PostJob;

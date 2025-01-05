@@ -7,6 +7,8 @@ import SignUpPage from './src/Authentication/SignUpPage';
 import Home from './src/screens/Home';
 import Tab from './src/navigation/Tab';
 import Filter1 from './src/screens/Filter1';
+import PostJob from './src/screens/PostJob';
+import PostService from './src/screens/PostService';
 const Stack = createStackNavigator();
 const App = () => {
   return (
@@ -22,6 +24,16 @@ const App = () => {
         <Stack.Screen
           name="Tab"
           component={Tab}
+          options={{ headerShown: false }}
+        />
+         <Stack.Screen
+          name="PostJob"
+          component={PostJob}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="PostService"
+          component={PostService}
           options={{ headerShown: false }}
         />
         <Stack.Screen
